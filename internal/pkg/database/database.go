@@ -18,12 +18,12 @@ var (
 
 func New() *sql.DB {
 	once.Do(func() {
-		connectionString := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
+		connectionString := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
 			os.Getenv("DB_USER"),
 			os.Getenv("DB_PASSWORD"),
 			os.Getenv("DB_NAME"),
 			os.Getenv("DB_HOST"),
-			5432)
+			os.Getenv("DB_PORT"))
 		fmt.Println(connectionString)
 		db, dbInitErr = sql.Open("postgres", connectionString)
 		if dbInitErr != nil {

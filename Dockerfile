@@ -3,6 +3,9 @@ COPY . /app
 WORKDIR /app
 
 RUN go get github.com/gorilla/mux
+RUN go get github.com/lib/pq
+
+WORKDIR /app/cmd
 
 RUN go build -o simplelinkshortener
 

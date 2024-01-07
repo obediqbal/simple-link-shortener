@@ -93,8 +93,9 @@ func isShortURLExist(shortURL string, dest *bool) error {
 	if err := row.Scan(); err != nil {
 		if err == sql.ErrNoRows {
 			*dest = false
+		} else {
+			return err
 		}
-		return err
 	}
 	*dest = true
 	return nil

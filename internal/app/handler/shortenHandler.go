@@ -1,35 +1,80 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
+	"os"
 	"simplelinkshortener/internal/pkg/database"
 	"strings"
+
+	"golang.org/x/net/publicsuffix"
 )
 
 func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("shortening...")
+	host := os.Getenv("APP_HOST")
 
 	originalURL := r.FormValue("original_url")
 	if originalURL == "" {
 		http.Error(w, "Please provide a URL", http.StatusBadRequest)
 		return
 	}
-
-	shortURL := generateShortURL()
+	u, err := url.Parse(originalURL)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if _, err := publicsuffix.EffectiveTLDPlusOne(u.Host); err != nil {
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
 
 	db := database.New()
-	_, err := db.Exec("INSERT INTO url(original_url, short_url) VALUES($1, $2)", originalURL, shortURL)
-	if err != nil {
-		log.Println("Error inserting data", err)
+	var shortURL string
+	if shortURL = r.FormValue("short_url"); shortURL == "" { // Generates short_url if not provided
+		for {
+			shortURL = generateShortURL()
+			exists, err := isShortURLExist(shortURL)
+			if err != nil {
+				log.Println("Error validating short URL ", err)
+				http.Error(w, "Error validating short URL", http.StatusInternalServerError)
+				return
+			}
+			if !*exists {
+				break
+			}
+		}
+	} else {
+		exists, err := isShortURLExist(shortURL)
+		if err != nil {
+			log.Println("Error validating short URL ", err)
+			http.Error(w, "Error validating short URL", http.StatusInternalServerError)
+			return
+		}
+		if *exists {
+			http.Error(w, "Short URL already used", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if _, err := url.ParseRequestURI(host + "/" + shortURL); err != nil { // Validates the short_url provided or generated
+		log.Println("Invalid short URL ", err)
+		http.Error(w, "Invalid short URL", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := db.Exec("INSERT INTO url(original_url, short_url) VALUES($1, $2)", originalURL, shortURL); err != nil {
+		log.Println("Error inserting data ", err)
 		http.Error(w, "Error inserting data", http.StatusInternalServerError)
 		return
 	}
 	// shortenedURLs[shortURL] = originalURL
 
-	response := fmt.Sprintf("Shortened URL: http://localhost:8080/%s", shortURL)
+	response := fmt.Sprintf("Shortened URL: %s/%s", host, shortURL)
 	fmt.Fprintf(w, response)
 }
 
@@ -40,4 +85,19 @@ func generateShortURL() string {
 		builder.WriteByte(letters[rand.Intn(len(letters))])
 	}
 	return builder.String()
+}
+
+func isShortURLExist(shortURL string) (*bool, error) {
+	db := database.New()
+	var ret *bool
+	row := db.QueryRow("SELECT short_url FROM url WHERE short_url=$1", shortURL)
+	if err := row.Scan(); err != nil {
+		if err == sql.ErrNoRows {
+			*ret = false
+			return ret, nil
+		}
+		return nil, err
+	}
+	*ret = true
+	return ret, nil
 }

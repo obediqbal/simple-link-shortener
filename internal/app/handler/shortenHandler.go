@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"simplelinkshortener/internal/pkg/database"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/publicsuffix"
@@ -49,6 +50,10 @@ func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
+		if max_len, _ := strconv.Atoi(os.Getenv("MAX_SHORT_URL_LEN")); len(shortURL) > max_len {
+			http.Error(w, fmt.Sprintf("Short URL is too long (max %d)", max_len), http.StatusBadRequest)
+			return
+		}
 		var exists bool
 		if err := isShortURLExist(shortURL, &exists); err != nil {
 			log.Println("Error validating short URL ", err)
@@ -61,7 +66,8 @@ func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if _, err := url.ParseRequestURI(host + "/" + shortURL); err != nil { // Validates the short_url provided or generated
+	finalShortURL, err := url.ParseRequestURI(host + "/" + shortURL)
+	if err != nil { // Validates the short_url provided or generated
 		log.Println("Invalid short URL ", err)
 		http.Error(w, "Invalid short URL", http.StatusBadRequest)
 		return
@@ -74,8 +80,8 @@ func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// shortenedURLs[shortURL] = originalURL
 
-	response := fmt.Sprintf("Shortened URL: %s/%s", host, shortURL)
-	fmt.Fprintf(w, response)
+	response := "Shortened URL: " + finalShortURL.String()
+	fmt.Fprint(w, response)
 }
 
 func generateShortURL() string {
@@ -90,9 +96,11 @@ func generateShortURL() string {
 func isShortURLExist(shortURL string, dest *bool) error {
 	db := database.New()
 	row := db.QueryRow("SELECT short_url FROM url WHERE short_url=$1", shortURL)
-	if err := row.Scan(); err != nil {
+	var data string
+	if err := row.Scan(&data); err != nil {
 		if err == sql.ErrNoRows {
 			*dest = false
+			return nil
 		} else {
 			return err
 		}

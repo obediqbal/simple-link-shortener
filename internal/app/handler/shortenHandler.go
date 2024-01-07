@@ -38,24 +38,24 @@ func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	if shortURL = r.FormValue("short_url"); shortURL == "" { // Generates short_url if not provided
 		for {
 			shortURL = generateShortURL()
-			exists, err := isShortURLExist(shortURL)
-			if err != nil {
+			var exists bool
+			if err := isShortURLExist(shortURL, &exists); err != nil {
 				log.Println("Error validating short URL ", err)
 				http.Error(w, "Error validating short URL", http.StatusInternalServerError)
 				return
 			}
-			if !*exists {
+			if !exists {
 				break
 			}
 		}
 	} else {
-		exists, err := isShortURLExist(shortURL)
-		if err != nil {
+		var exists bool
+		if err := isShortURLExist(shortURL, &exists); err != nil {
 			log.Println("Error validating short URL ", err)
 			http.Error(w, "Error validating short URL", http.StatusInternalServerError)
 			return
 		}
-		if *exists {
+		if exists {
 			http.Error(w, "Short URL already used", http.StatusBadRequest)
 			return
 		}
@@ -87,17 +87,15 @@ func generateShortURL() string {
 	return builder.String()
 }
 
-func isShortURLExist(shortURL string) (*bool, error) {
+func isShortURLExist(shortURL string, dest *bool) error {
 	db := database.New()
-	var ret *bool
 	row := db.QueryRow("SELECT short_url FROM url WHERE short_url=$1", shortURL)
 	if err := row.Scan(); err != nil {
 		if err == sql.ErrNoRows {
-			*ret = false
-			return ret, nil
+			*dest = false
 		}
-		return nil, err
+		return err
 	}
-	*ret = true
-	return ret, nil
+	*dest = true
+	return nil
 }

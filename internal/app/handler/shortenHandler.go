@@ -54,6 +54,10 @@ func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Short URL is too long (max %d)", max_len), http.StatusBadRequest)
 			return
 		}
+		if strings.HasPrefix(originalURL, host) {
+			http.Error(w, fmt.Sprintf("Self refer is not allowed"), http.StatusBadRequest)
+			return
+		}
 		var exists bool
 		if err := isShortURLExist(shortURL, &exists); err != nil {
 			log.Println("Error validating short URL ", err)

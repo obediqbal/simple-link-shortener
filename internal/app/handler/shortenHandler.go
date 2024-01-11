@@ -80,8 +80,9 @@ func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// shortenedURLs[shortURL] = originalURL
 
-	response := "Shortened URL: " + finalShortURL.String()
+	response := finalShortURL.String()
 	fmt.Fprint(w, response)
+	fmt.Println(response)
 }
 
 func generateShortURL() string {

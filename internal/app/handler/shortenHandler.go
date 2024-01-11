@@ -17,7 +17,7 @@ import (
 
 func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("shortening...")
-	host := os.Getenv("APP_HOST")
+	host := os.Getenv("APP_TARGET")
 
 	originalURL := r.FormValue("original_url")
 	if originalURL == "" {

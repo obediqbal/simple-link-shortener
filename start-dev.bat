@@ -1,0 +1,1 @@
+gin -i --appPort 8080 -d ./cmd/ run main.go dev

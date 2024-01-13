@@ -25,6 +25,8 @@ func Init() {
 	)
 
 	r.HandleFunc("/", handler.HomeHandler).Methods("GET")
+	r.HandleFunc("/auth/register", handler.RegisterHandler).Methods("POST")
+	r.HandleFunc("/auth/login", handler.LoginHandler).Methods("POST")
 	r.HandleFunc("/shorten", handler.ShortenHandler).Methods("POST")
 	r.HandleFunc("/{shortURL}", handler.RedirectHandler).Methods("GET")
 

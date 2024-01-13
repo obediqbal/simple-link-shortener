@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	if os.Args[2] == "dev" {
+	if len(os.Args) > 2 && os.Args[2] == "dev" {
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatal("Error loading .env file", err)

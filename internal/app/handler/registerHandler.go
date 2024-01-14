@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"simplelinkshortener/internal/pkg/auth"
 	"simplelinkshortener/internal/pkg/database"
 
 	"golang.org/x/crypto/bcrypt"
@@ -24,7 +25,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User already exists", http.StatusBadRequest)
 		return
 	}
-	log.Println("not exists")
 
 	if len(password) < 6 {
 		http.Error(w, "Password too short (min 6 chars)", http.StatusBadRequest)
@@ -36,7 +36,12 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Successfully registered %s", username)
+	tokenString, err := auth.GenerateJWT(username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	fmt.Fprintf(w, tokenString)
 }
 
 func register(username string, password string) error {

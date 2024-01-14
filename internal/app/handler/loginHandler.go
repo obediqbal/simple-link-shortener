@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"simplelinkshortener/internal/pkg/auth"
 	"simplelinkshortener/internal/pkg/database"
 
 	"golang.org/x/crypto/bcrypt"
@@ -20,7 +21,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Here's your token")
+	tokenString, err := auth.GenerateJWT(username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	fmt.Fprintf(w, tokenString)
 }
 
 func validate(username string, password string) error {

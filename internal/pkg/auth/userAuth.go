@@ -10,20 +10,18 @@ import (
 
 type UserClaim struct {
 	jwt.StandardClaims
-	Username string              `json:"username"`
-	History  []map[string]string `json:"history"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
 }
 
-func GenerateJWT(username string) (string, error) {
-	// db := database.New()
-	var history []map[string]string // TO BE IMPLEMENTED
-
+func GenerateJWT(username string, displayName string) (string, error) {
 	claims := UserClaim{
 		StandardClaims: jwt.StandardClaims{
-			IssuedAt: time.Now().Unix(),
+			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),
 		},
-		Username: username,
-		History:  history,
+		Username:    username,
+		DisplayName: displayName,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -46,6 +44,9 @@ func ValidateJWT(tokenString string) (*UserClaim, error) {
 	}
 
 	if claims, ok := token.Claims.(*UserClaim); ok && token.Valid {
+		if claims.ExpiresAt < time.Now().Unix() {
+			return nil, fmt.Errorf("Expired token")
+		}
 		return claims, nil
 	}
 

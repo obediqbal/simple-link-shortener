@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"simplelinkshortener/internal/app/handler"
@@ -13,16 +12,6 @@ import (
 func Init() {
 	r := mux.NewRouter()
 
-	// allowedOrigins := strings.Split(os.Getenv("ORIGIN_ALLOWED"), ",")
-	// log.Printf("Allowed: %v\n", allowedOrigins)
-
-	// corsHandler := handlers.CORS(
-	// 	handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	// 	handlers.AllowedMethods([]string{"GET", "POST"}),
-	// 	handlers.AllowedOrigins(allowedOrigins),
-	// )
-
-	// r.Use(corsHandler)
 	r.Use(middlewares.UseCors)
 
 	publicRouter := r.NewRoute().Subrouter()
@@ -39,6 +28,6 @@ func Init() {
 	lazyRouter.HandleFunc("/shorten", handler.ShortenHandler).Methods("POST")
 
 	port := ":8080"
-	fmt.Printf("Server is listening on port %s...\n", port)
+	log.Printf("Server is listening on port %s...\n", port)
 	log.Fatal(http.ListenAndServe(port, r))
 }

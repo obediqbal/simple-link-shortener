@@ -21,7 +21,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenString, err := auth.GenerateJWT(username)
+	tokenString, err := auth.GenerateJWT(username, "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
